@@ -1710,13 +1710,22 @@ function generateCoordCode(){
   sessionStorage.setItem(key, JSON.stringify(existing));
   showToast('✅ Code assigned to '+coordinator,'success');
 }
-function generateSingle(){
+async function generateSingle(){
   const handle=document.getElementById('singleHandle').value.trim()||'CREATOR';
+  const limit=parseInt(document.getElementById('singleLimit')?.value)||50;
+  const expiry=document.getElementById('singleExpiry')?.value||null;
   const clean=handle.replace('@','').toUpperCase().slice(0,8);
   const code=`MASSED-${clean}-${Math.floor(1000+Math.random()*9000)}`;
-  document.getElementById('singleCode').textContent=code;
-  document.getElementById('singleResult').style.display='flex';
-  showToast('✓ Code generated','success');
+  try{
+    await fetch('/api/generate-code',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({code,use_limit:limit,expiry_date:expiry,created_by:loggedInUser,label:handle})
+    });
+    document.getElementById('singleCode').textContent=code;
+    document.getElementById('singleResult').style.display='flex';
+    showToast('✓ Code saved to database','success');
+  }catch(e){showToast('✗ Failed to save code','error');}
 }
 function copyCode(){const code=document.getElementById('singleCode').textContent;navigator.clipboard?.writeText(code).catch(()=>{});showToast('✓ Copied to clipboard','success');}
 function bulkGenerate(){
