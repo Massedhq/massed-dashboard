@@ -1711,21 +1711,38 @@ function generateCoordCode(){
   showToast('✅ Code assigned to '+coordinator,'success');
 }
 async function generateSingle(){
-  const handle=document.getElementById('singleHandle').value.trim()||'CREATOR';
-  const limit=parseInt(document.getElementById('singleLimit')?.value)||50;
-  const expiry=document.getElementById('singleExpiry')?.value||null;
-  const clean=handle.replace('@','').toUpperCase().slice(0,8);
-  const code=`MASSED-${clean}-${Math.floor(1000+Math.random()*9000)}`;
-  try{
-    await fetch('/api/generate-code',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({code,use_limit:limit,expiry_date:expiry,created_by:loggedInUser,label:handle})
+  const handle = document.getElementById('singleHandle').value.trim() || 'CREATOR';
+  const limit = parseInt(document.getElementById('singleLimit')?.value) || 50;
+  const expiry = document.getElementById('singleExpiry')?.value || null;
+  const clean = handle.replace('@','').toUpperCase().slice(0,8);
+  const code = `MASSED-${clean}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+  try {
+    const response = await fetch('/api/generate-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code,
+        use_limit: limit,
+        expiry_date: expiry,
+        label: handle
+      })
     });
-    document.getElementById('singleCode').textContent=code;
-    document.getElementById('singleResult').style.display='flex';
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to save code');
+    }
+
+    document.getElementById('singleCode').textContent = code;
+    document.getElementById('singleResult').style.display = 'flex';
     showToast('✓ Code saved to database','success');
-  }catch(e){showToast('✗ Failed to save code','error');}
+
+  } catch (e) {
+    console.error(e);
+    showToast('✗ ' + e.message,'error');
+  }
 }
 function copyCode(){const code=document.getElementById('singleCode').textContent;navigator.clipboard?.writeText(code).catch(()=>{});showToast('✓ Copied to clipboard','success');}
 function bulkGenerate(){
