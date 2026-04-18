@@ -166,6 +166,64 @@ async function loadDashboard(){
   showTab('dashboard',document.getElementById('nav-dashboard'));
 }
 
+
+async function loadCodes() {
+  try {
+    const res = await fetch('/api/get-codes');
+    if (!res.ok) {
+      console.error('Failed to fetch codes:', res.status);
+      return;
+    }
+    const data = await res.json();
+
+    // Try to find the codes table tbody, fallback to first data-table tbody
+    const tbody = document.getElementById('codesTbody') || document.querySelector('.codes-table-wrap .data-table tbody') || document.querySelector('.data-table tbody');
+    if (!tbody) {
+      console.error('No table tbody found');
+      return;
+    }
+
+    // Clear existing rows
+    tbody.innerHTML = '';
+
+    // Handle empty state
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-dim);">No codes yet — generate one using + Generate New</td></tr>';
+      return;
+    }
+
+    data.forEach(item => {
+      const used = item.use_limit - item.uses_remaining;
+      const status = item.uses_remaining > 0 ? 'Active' : 'Used';
+
+      const row = `
+        <tr>
+          <td>${item.label || '—'}</td>
+          <td style="font-family:monospace;font-size:0.75rem;color:var(--gold);">${item.code}</td>
+          <td>${item.use_limit}</td>
+          <td>${used}</td>
+          <td><span class="badge ${status === 'Active' ? 'badge-active' : 'badge-completed'}">${status}</span></td>
+          <td>${item.uses_remaining}</td>
+        </tr>
+      `;
+
+      tbody.innerHTML += row;
+    });
+
+  } catch (err) {
+    console.error('Error loading codes:', err);
+  }
+}
+
+// Auto-load on page load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadCodes);
+} else {
+  loadCodes();
+}
+
+window.loadCodes = loadCodes;
+
 // ===== NOTIFICATIONS =====
 function toggleNotif(){document.getElementById('notifDropdown').classList.toggle('open');}
 function clearNotifs(){document.getElementById('notifList').innerHTML='<div style="padding:16px;text-align:center;font-size:0.82rem;color:var(--text-dim);">No new notifications</div>';document.getElementById('notifDot').style.display='none';document.getElementById('notifDropdown').classList.remove('open');}
@@ -1136,6 +1194,8 @@ async function generateSingle(){
     document.getElementById('singleResult').style.display = 'flex';
 
     showToast('✓ Code saved: ' + data.code,'success');
+    // Refresh the codes table after generating
+    if (typeof loadCodes === 'function') loadCodes();
 
   } catch (e) {
     console.error(e);
