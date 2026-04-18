@@ -353,50 +353,64 @@ function showTab(tab,el){
     </div>`;
 
   } else if(tab==='codes'){
-    const assignedCodes=loggedInRole==='coordinator'?JSON.parse(sessionStorage.getItem('coordCodes_'+loggedInUser)||'[]'):[];
-    const allCodes=[...performers.filter(p=>p.code&&p.is_creator&&(loggedInRole==='admin'||p.created_by===loggedInUser)), ...assignedCodes.map(c=>({name:'Assigned by Admin',handle:c.label,code:c.code,limit:c.limit,claims:c.claims||0,status:'active',initials:'AD',color:'#C49A6C',isAssigned:true,created:c.created}))];
-    main.innerHTML=`
-    <div class="page-header"><div class="page-title">My Codes</div><div class="page-sub">All codes generated and assigned by you</div></div>
-    <div class="page-content">
-      <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
-        <div class="stat-box"><div class="stat-box-label">Total Codes</div><div class="stat-box-num">${allCodes.length}</div><div class="stat-box-note">Distributed to creators</div></div>
-        <div class="stat-box"><div class="stat-box-label">Total Seats via Codes</div><div class="stat-box-num">${allCodes.reduce((s,p)=>s+(p.claims||0),0)}</div><div class="stat-box-note">via your codes</div></div>
-        <div class="stat-box"><div class="stat-box-label">Codes Near Limit</div><div class="stat-box-num" style="color:var(--amber)">0</div><div class="stat-box-note">None</div></div>
+    main.innerHTML = `
+      <div class="page-header">
+        <div class="page-title">My Codes</div>
+        <div class="page-sub">All codes generated and assigned by you</div>
       </div>
-      ${assignedCodes.length>0?`<div class="table-section" style="margin-bottom:20px;">
-        <div class="table-section-header"><div class="table-section-title" style="color:var(--gold);">🛡️ Admin-Assigned Codes</div></div>
-        <table class="data-table"><thead><tr><th>Label</th><th>Code</th><th>Limit</th><th>Used</th><th>Remaining</th><th>Assigned</th></tr></thead><tbody>
-        ${assignedCodes.map(c=>{
-          const rem=c.limit-(c.claims||0);
-          const pct=Math.min(100,Math.round((c.claims||0)/c.limit*100));
-          return `<tr>
-            <td><div style="font-weight:700;font-size:0.85rem;">${c.label}</div></td>
-            <td><span class="code-link" style="cursor:pointer;" onclick="navigator.clipboard.writeText('${c.code}');showToast('✓ Copied','success')">${c.code}</span></td>
-            <td>${c.limit}</td><td>${c.claims||0}</td>
-            <td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div><span style="font-size:0.78rem;color:var(--text-dim)">${rem}</span></div></td>
-            <td style="font-size:0.75rem;color:var(--text-dim);">${c.created||'—'}</td>
-          </tr>`;
-        }).join('')}
-        </tbody></table>
-      </div>`:''}
-      <div class="codes-table-wrap">
-        <div class="table-section-header"><div class="table-section-title">All Distributed Codes</div><span class="view-all-link" onclick="showTab('gencode',document.getElementById('nav-gencode'))">+ Generate New</span></div>
-        <table class="data-table"><thead><tr><th>Creator</th><th>Code</th><th>Limit</th><th>Used</th><th>Status</th><th>Remaining</th><th></th></tr></thead><tbody>
-        ${performers.filter(p=>p.code&&p.is_creator&&(loggedInRole==='admin'||p.created_by===loggedInUser)).map(p=>{
-          const remaining=p.limit-p.claims;
-          const pct=Math.min(100,Math.round(p.claims/p.limit*100));
-          return `<tr>
-            <td><div class="creator-cell">${creatorAv(p)}<div><div class="creator-info-name">${p.name}</div><div class="creator-info-handle">${p.handle}</div></div></div></td>
-            <td><span class="code-link">${p.code}</span></td>
-            <td>${p.limit}</td><td>${p.claims}</td>
-            <td>${statusBadge(p.status)}</td>
-            <td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div><span style="font-size:0.78rem;color:${remaining<0?'var(--red)':'var(--text-dim)'}">${remaining}</span></div></td>
-            <td><button class="arrow-btn" onclick="showToast('Managing code for ${p.name}')">→</button></td>
-          </tr>`;
-        }).join('')}
-        </tbody></table>
+  
+      <div class="page-content">
+        <div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
+          <div class="stat-box">
+            <div class="stat-box-label">Total Codes</div>
+            <div class="stat-box-num" id="totalCodes">0</div>
+            <div class="stat-box-note">Distributed to creators</div>
+          </div>
+  
+          <div class="stat-box">
+            <div class="stat-box-label">Total Seats via Codes</div>
+            <div class="stat-box-num" id="totalUsed">0</div>
+            <div class="stat-box-note">via your codes</div>
+          </div>
+  
+          <div class="stat-box">
+            <div class="stat-box-label">Codes Near Limit</div>
+            <div class="stat-box-num" id="nearLimit" style="color:var(--amber)">0</div>
+            <div class="stat-box-note">None</div>
+          </div>
+        </div>
+  
+        <div class="codes-table-wrap">
+          <div class="table-section-header">
+            <div class="table-section-title">All Distributed Codes</div>
+            <span class="view-all-link" onclick="showTab('gencode',document.getElementById('nav-gencode'))">
+              + Generate New
+            </span>
+          </div>
+  
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Creator</th>
+                <th>Code</th>
+                <th>Limit</th>
+                <th>Used</th>
+                <th>Status</th>
+                <th>Remaining</th>
+                <th></th>
+              </tr>
+            </thead>
+  
+            <!-- 🔥 IMPORTANT -->
+            <tbody id="codesTableBody"></tbody>
+          </table>
+        </div>
       </div>
-    </div>`;
+    `;
+  
+    // 🔥 LOAD DATA AFTER RENDER
+    loadCodes();
+    
 
   } else if(tab==='gencode'){
     main.innerHTML=`
@@ -1173,7 +1187,7 @@ async function generateSingle(){
   const code = `MASSED-${clean}-${Math.floor(1000 + Math.random() * 9000)}`;
 
   try {
-    const response = await fetch('/api/generate-code', { // ✅ FIXED
+    const response = await fetch('/api/generate-code', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1194,7 +1208,8 @@ async function generateSingle(){
     document.getElementById('singleResult').style.display = 'flex';
 
     showToast('✓ Code saved: ' + data.code,'success');
-    // Refresh the codes table after generating
+
+    // ✅ REFRESH TABLE
     if (typeof loadCodes === 'function') loadCodes();
 
   } catch (e) {
