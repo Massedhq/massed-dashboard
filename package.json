@@ -2,10 +2,8 @@
   "name": "massed-dashboard",
   "version": "1.0.0",
   "type": "module",
-  "scripts": {
-    "build": "echo build"
-  },
   "dependencies": {
     "@neondatabase/serverless": "^0.9.0"
   }
+  
 }
